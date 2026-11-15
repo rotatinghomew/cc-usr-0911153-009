@@ -1,0 +1,158 @@
+{
+  "scenario": "跨区域智慧教育应用成效与公平评估平台",
+  "synthetic": true,
+  "records": [
+    {
+      "record_id": "learning_program-001",
+      "payload": {
+        "school_code": "school_code-0",
+        "grade_band": "grade_band-1",
+        "subject": "subject-2",
+        "learner_count": 17.7,
+        "usage_minutes": 19.6,
+        "baseline_score": 21.5,
+        "outcome_score": 23.4,
+        "missing_rate": 0.25,
+        "teacher_support": 0.36,
+        "connectivity": 0.47,
+        "language_group": "language_group-0",
+        "consent_rate": 0.69
+      },
+      "state": "registered",
+      "source": "synthetic-local-acceptance"
+    },
+    {
+      "record_id": "learning_program-002",
+      "payload": {
+        "school_code": "school_code-1",
+        "grade_band": "grade_band-2",
+        "subject": "subject-3",
+        "learner_count": 21.4,
+        "usage_minutes": 23.3,
+        "baseline_score": 25.2,
+        "outcome_score": 27.1,
+        "missing_rate": 0.36,
+        "teacher_support": 0.47,
+        "connectivity": 0.58,
+        "language_group": "language_group-1",
+        "consent_rate": 0.8
+      },
+      "state": "registered",
+      "source": "synthetic-local-acceptance"
+    },
+    {
+      "record_id": "learning_program-003",
+      "payload": {
+        "school_code": "school_code-2",
+        "grade_band": "grade_band-3",
+        "subject": "subject-4",
+        "learner_count": 25.1,
+        "usage_minutes": 27.0,
+        "baseline_score": 28.9,
+        "outcome_score": 30.8,
+        "missing_rate": 0.47,
+        "teacher_support": 0.58,
+        "connectivity": 0.69,
+        "language_group": "language_group-2",
+        "consent_rate": 0.91
+      },
+      "state": "registered",
+      "source": "synthetic-local-acceptance"
+    },
+    {
+      "record_id": "learning_program-004",
+      "payload": {
+        "school_code": "school_code-3",
+        "grade_band": "grade_band-4",
+        "subject": "subject-0",
+        "learner_count": 28.8,
+        "usage_minutes": 30.7,
+        "baseline_score": 32.6,
+        "outcome_score": 34.5,
+        "missing_rate": 0.58,
+        "teacher_support": 0.69,
+        "connectivity": 0.8,
+        "language_group": "language_group-3",
+        "consent_rate": 0.25
+      },
+      "state": "registered",
+      "source": "synthetic-local-acceptance"
+    },
+    {
+      "record_id": "learning_program-005",
+      "payload": {
+        "school_code": "school_code-4",
+        "grade_band": "grade_band-0",
+        "subject": "subject-1",
+        "learner_count": 32.5,
+        "usage_minutes": 34.4,
+        "baseline_score": 36.3,
+        "outcome_score": 38.2,
+        "missing_rate": 0.69,
+        "teacher_support": 0.8,
+        "connectivity": 0.91,
+        "language_group": "language_group-4",
+        "consent_rate": 0.36
+      },
+      "state": "registered",
+      "source": "synthetic-local-acceptance"
+    },
+    {
+      "record_id": "learning_program-006",
+      "payload": {
+        "school_code": "school_code-0",
+        "grade_band": "grade_band-1",
+        "subject": "subject-2",
+        "learner_count": 36.2,
+        "usage_minutes": 38.1,
+        "baseline_score": 40.0,
+        "outcome_score": 41.9,
+        "missing_rate": 0.8,
+        "teacher_support": 0.91,
+        "connectivity": 0.25,
+        "language_group": "language_group-0",
+        "consent_rate": 0.47
+      },
+      "state": "registered",
+      "source": "synthetic-local-acceptance"
+    },
+    {
+      "record_id": "learning_program-007",
+      "payload": {
+        "school_code": "school_code-1",
+        "grade_band": "grade_band-2",
+        "subject": "subject-3",
+        "learner_count": 39.9,
+        "usage_minutes": 41.8,
+        "baseline_score": 43.7,
+        "outcome_score": 45.6,
+        "missing_rate": 0.91,
+        "teacher_support": 0.25,
+        "connectivity": 0.36,
+        "language_group": "language_group-1",
+        "consent_rate": 0.58
+      },
+      "state": "registered",
+      "source": "synthetic-local-acceptance"
+    },
+    {
+      "record_id": "learning_program-008",
+      "payload": {
+        "school_code": "school_code-2",
+        "grade_band": "grade_band-3",
+        "subject": "subject-4",
+        "learner_count": 43.6,
+        "usage_minutes": 45.5,
+        "baseline_score": 47.4,
+        "outcome_score": 49.3,
+        "missing_rate": 0.25,
+        "teacher_support": 0.36,
+        "connectivity": 0.47,
+        "language_group": "language_group-2",
+        "consent_rate": 0.69
+      },
+      "state": "registered",
+      "source": "synthetic-local-acceptance"
+    }
+  ]
+}
