@@ -39,3 +39,33 @@ class ScaleReviewsTests(unittest.TestCase):
             app.scale_reviews.decide("round", "b", "deferred", "等候后续名额")
             with self.assertRaises(ContractError):
                 app.scale_reviews.decide("round", "a", "deferred", "改写旧结论")
+
+    def test_reopening_review_requires_the_published_evidence(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = Application(Path(d) / "db")
+            fixture = json.loads((Path(__file__).resolve().parents[1] / "fixtures/acceptance.json").read_text())
+            result = app.run_fixture(fixture, Path(d) / "out")
+            card_id = result["cohort_card"]["card_id"]
+            queue = app.scale_reviews.open("round", card_id, .55, 10)
+            # 中途退出后恢复：同一评分卡、同一人口证据，重开得到同一评议队列。
+            self.assertEqual(Application(Path(d) / "db").scale_reviews.open("round", card_id, .55, 10), queue)
+            with app.repository.connect() as c:
+                c.execute("UPDATE cohort_scorecards SET evidence_hash='0'*64 WHERE card_id=?", (card_id,))
+            with self.assertRaises(ContractError):
+                app.scale_reviews.open("round", card_id, .55, 10)
+
+    def test_late_school_gets_a_new_round_instead_of_mixing_evidence(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = Application(Path(d) / "db")
+            fixture = json.loads((Path(__file__).resolve().parents[1] / "fixtures/acceptance.json").read_text())
+            first = app.run_fixture(fixture, Path(d) / "first")
+            late = dict(fixture["records"][0], record_id="learning_program-009")
+            second = app.run_fixture(dict(fixture, records=fixture["records"] + [late]), Path(d) / "second")
+            self.assertNotEqual(first["cohort_card"]["evidence_hash"], second["cohort_card"]["evidence_hash"])
+            original = app.scale_reviews.open("round-1", first["cohort_card"]["card_id"], .55, 10)
+            updated = app.scale_reviews.open("round-2", second["cohort_card"]["card_id"], .55, 10)
+            self.assertEqual({s["school_id"] for s in original["schools"]},
+                             {row["record_id"] for row in fixture["records"]})
+            self.assertIn("learning_program-009", {s["school_id"] for s in updated["schools"]})
+            # 旧评议保留原证据，复核时仍可核对，不被新口径替换。
+            self.assertEqual(app.scale_reviews.inspect("round-1"), original)

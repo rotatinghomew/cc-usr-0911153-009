@@ -136,10 +136,17 @@ class DomainRecord:
                    source=str(value.get("source") or "local-fixture"))
 
     @property
+    def content_fingerprint(self) -> str:
+        """该校在比较人口中的内容指纹，只覆盖参与评分的证据本身。"""
+        return stable_hash({"record_id": self.record_id, "payload": self.payload})
+
+    @property
     def fingerprint(self) -> str:
+        # 观测时间属于元数据，不属于可复核的评分证据；排除它之后，同一输入的
+        # 重排、重放和中断恢复才能得到同一份证据指纹。
         return stable_hash({"record_id": self.record_id, "payload": self.payload,
                             "state": self.state, "version": self.version,
-                            "occurred_at": self.occurred_at, "source": self.source})
+                            "source": self.source})
 
     def with_state(self, state: str) -> "DomainRecord":
         return DomainRecord(self.record_id, self.payload, state, self.version + 1,
@@ -161,6 +168,8 @@ class Decision:
     rule_results: tuple[RuleResult, ...]
     metrics: dict[str, float]
     decided_at: str = field(default_factory=utc_now)
+    population_hash: str = ""
+    population_size: int = 0
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "record_id", identifier(self.record_id))
@@ -169,15 +178,29 @@ class Decision:
             raise ContractError("outcome is required")
         if not self.reasons:
             raise ContractError("decision needs reasons")
+        if self.population_size < 0:
+            raise ContractError("population size cannot be negative")
+        if bool(self.population_hash) != bool(self.population_size):
+            raise ContractError("population evidence must name its schools")
+        if self.population_hash and not re.fullmatch(r"[0-9a-f]{64}", self.population_hash):
+            raise ContractError("population evidence hash is invalid")
+
+    def with_population(self, population_hash: str, population_size: int) -> "Decision":
+        """把决策绑定到产生它的比较人口，便于复核与防止新旧口径混用。"""
+        return Decision(self.record_id, self.outcome, self.score, self.reasons, self.rule_results,
+                        self.metrics, self.decided_at, population_hash, population_size)
 
     @property
     def fingerprint(self) -> str:
-        return stable_hash(self.as_dict())
+        body = self.as_dict()
+        body.pop("decided_at")
+        return stable_hash(body)
 
     def as_dict(self) -> dict[str, Any]:
         return {"record_id": self.record_id, "outcome": self.outcome, "score": self.score,
                 "reasons": list(self.reasons), "rules": [item.as_dict() for item in self.rule_results],
-                "metrics": self.metrics, "decided_at": self.decided_at}
+                "metrics": self.metrics, "population_hash": self.population_hash,
+                "population_size": self.population_size, "decided_at": self.decided_at}
 
 
 def require_fields(record: DomainRecord, fields: Iterable[str] = REQUIRED_FIELDS) -> list[str]:

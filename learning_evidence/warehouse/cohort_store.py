@@ -87,7 +87,8 @@ class Repository:
             prepare_scorecards(connection)
 
     def publish_cohort_card(self, card_id: str, cohort_label: str, record_ids: list[str],
-                            decisions: Mapping[str, Decision]) -> dict[str, Any]:
+                            decisions: Mapping[str, Decision],
+                            records: list[DomainRecord] | None = None) -> dict[str, Any]:
         if len(record_ids) != len(set(record_ids)):
             raise ContractError("duplicate school in cohort")
         with self.transaction() as connection:
@@ -95,10 +96,20 @@ class Repository:
                     for record_id in record_ids]
             if any(row is None for row in rows):
                 raise ContractError("cohort references unknown school")
-            records = [DomainRecord(row["record_id"], json.loads(row["payload_json"]),
-                                    row["state"], row["version"], row["occurred_at"], row["source"])
-                       for row in rows]
-            return publish_card(connection, card_id, cohort_label, records, decisions)
+            stored = [DomainRecord(row["record_id"], json.loads(row["payload_json"]),
+                                   row["state"], row["version"], row["occurred_at"], row["source"])
+                      for row in rows]
+            if records is not None:
+                # 评分卡记录的是评议所用证据，而不是工作流推进后的当前状态；
+                # 但该证据必须仍然对应库内同一批学校内容，防止悄悄替换旧结论。
+                supplied = {record.record_id: record for record in records}
+                if set(supplied) != set(record_ids):
+                    raise ContractError("cohort evidence must cover exactly the stored schools")
+                if any(stored_row.content_fingerprint != supplied[row["record_id"]].content_fingerprint
+                       for stored_row, row in zip(stored, rows)):
+                    raise ContractError("cohort evidence does not match stored schools")
+                stored = [supplied[record_id] for record_id in record_ids]
+            return publish_card(connection, card_id, cohort_label, stored, decisions)
 
     def cohort_card(self, card_id: str) -> dict[str, Any]:
         with self.connect() as connection:
@@ -169,6 +180,15 @@ class Repository:
                             state=row["state"], version=row["version"], occurred_at=row["occurred_at"],
                             source=row["source"])
 
+    def evidence_version(self, record_id: str, payload: Mapping[str, Any]) -> int | None:
+        """返回该证据内容首次入库的版本；历史更正会留下新内容，故取最早匹配版本。"""
+        body = canonical_json(payload)
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT MIN(version) FROM record_versions WHERE record_id=? AND payload_json=?",
+                (record_id, body)).fetchone()
+        return int(row[0]) if row and row[0] is not None else None
+
     def list_records(self, state: str | None = None) -> list[DomainRecord]:
         query = "SELECT * FROM records"
         params: tuple[Any, ...] = ()
@@ -187,12 +207,17 @@ class Repository:
         with self.transaction() as connection:
             if not connection.execute("SELECT 1 FROM records WHERE record_id=?", (decision.record_id,)).fetchone():
                 raise ContractError("decision record does not exist")
+            if connection.execute("SELECT 1 FROM decisions WHERE decision_id=?", (decision_id,)).fetchone():
+                # 同一份人口证据上的同一结论重放：不追加重复审计事件。
+                return decision_id
             body = canonical_json(decision.as_dict())
-            connection.execute("INSERT OR IGNORE INTO decisions(decision_id,record_id,outcome,score,decision_json,decided_at) VALUES(?,?,?,?,?,?)",
+            connection.execute("INSERT INTO decisions(decision_id,record_id,outcome,score,decision_json,decided_at) VALUES(?,?,?,?,?,?)",
                                (decision_id, decision.record_id, decision.outcome, decision.score, body, decision.decided_at))
             self.append_event(connection, "decision.saved", decision.record_id,
                               self.event_count(decision.record_id, connection) + 1,
-                              {"decision_id": decision_id, "outcome": decision.outcome, "score": decision.score})
+                              {"decision_id": decision_id, "outcome": decision.outcome, "score": decision.score,
+                               "population_hash": decision.population_hash,
+                               "population_size": decision.population_size})
         return decision_id
 
     def event_count(self, aggregate_id: str, connection: sqlite3.Connection | None = None) -> int:

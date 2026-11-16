@@ -8,6 +8,12 @@ scale_reviews.open 使用一张已发布评分卡及固定评分门槛建立学�
 和评分固化到 cohort_card；在同一数据库内可通过 repository.cohort_card(run_id)
 重读已发布评分卡。清单重放幂等，新证据不得静默覆盖旧卡。
 
+批次人口口径：同一比较批次先按学校标识规范化并整批固定人口证据，所有学校共用
+同一份群体权重，评分与推进判断不受导入顺序影响。晚到学校或历史更正会生成新的
+比较人口和新评分卡，旧卡保持可复核；评分卡拒绝混用不同人口口径的决策。
+中途退出后重跑同一清单会重算整批学校并得到同一份证据，不重复推进工作流状态。
+单校追踪（Application.process）仍按单校自身证据给出结论，并记录其所用的比较人口。
+
 运行验收：
 python3 -m learning_evidence run --fixture fixtures/acceptance.json --database /tmp/learning_evidence.sqlite3 --output /tmp/learning_evidence-output
 

@@ -32,6 +32,10 @@ class ScaleReviews:
             if old:
                 if (old["card_id"], old["minimum_score"], old["seats"]) != (card_id, minimum_score, seats):
                     raise ContractError("同一扩容评议不可混用评分卡或门槛")
+                # 恢复评议时必须仍对应评分卡已发布的同一份人口证据，
+                # 否则旧队列会与新口径并列呈现。
+                if old["evidence_hash"] != card["evidence_hash"]:
+                    raise ContractError("扩容评议所用证据与已发布评分卡不一致")
                 return self._read(c, campaign_id)
             c.execute("INSERT INTO scale_campaigns VALUES(?,?,?,?,?)",
                       (campaign_id, card_id, card["evidence_hash"], minimum_score, seats))
