@@ -56,8 +56,11 @@ class Application:
         if snapshot["chain_errors"]:
             raise ContractError("audit chain verification failed")
         manifest = export_bundle(output, final_records, decisions, snapshot, self.repository.event_rows())
+        card = self.repository.publish_cohort_card(run_id, str(fixture.get("scenario") or "current cohort"),
+                                                   [record.record_id for record in final_records], decisions)
         result = {"run_id": run_id, "fixture_hash": fixture_hash, "records": len(final_records),
-                  "decisions": len(decisions), "manifest": manifest, "snapshot": snapshot}
+                  "decisions": len(decisions), "manifest": manifest, "snapshot": snapshot,
+                  "cohort_card": card}
         self.repository.finish_run(run_id, result)
         return result
 

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Iterator, Mapping, Sequence
 
 from learning_evidence.programs.contract import Decision, DomainRecord, ContractError, canonical_json, stable_hash, utc_now
+from learning_evidence.publication.cohort_scorecard import prepare_scorecards, publish_card, read_card
 
 
 SCHEMA = """
@@ -83,6 +84,25 @@ class Repository:
     def initialize(self) -> None:
         with self.connect() as connection:
             connection.executescript(SCHEMA)
+            prepare_scorecards(connection)
+
+    def publish_cohort_card(self, card_id: str, cohort_label: str, record_ids: list[str],
+                            decisions: Mapping[str, Decision]) -> dict[str, Any]:
+        if len(record_ids) != len(set(record_ids)):
+            raise ContractError("duplicate school in cohort")
+        with self.transaction() as connection:
+            rows = [connection.execute("SELECT * FROM records WHERE record_id=?", (record_id,)).fetchone()
+                    for record_id in record_ids]
+            if any(row is None for row in rows):
+                raise ContractError("cohort references unknown school")
+            records = [DomainRecord(row["record_id"], json.loads(row["payload_json"]),
+                                    row["state"], row["version"], row["occurred_at"], row["source"])
+                       for row in rows]
+            return publish_card(connection, card_id, cohort_label, records, decisions)
+
+    def cohort_card(self, card_id: str) -> dict[str, Any]:
+        with self.connect() as connection:
+            return read_card(connection, card_id)
 
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
