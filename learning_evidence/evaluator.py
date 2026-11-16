@@ -9,11 +9,13 @@ from learning_evidence.warehouse.cohort_store import Repository
 from learning_evidence.rollout.scale_gates import advance_for_outcome, decide
 from learning_evidence.publication.scorecard import export_bundle, verify_bundle
 from learning_evidence.learning_metrics.bias_adjustment import derive_context
+from learning_evidence.rollout.scale_reviews import ScaleReviews
 
 
 class Application:
     def __init__(self, database: str | Path, context: Mapping[str, Any] | None = None):
         self.repository = Repository(database)
+        self.scale_reviews = ScaleReviews(self.repository)
         self.context = dict(context or {})
 
     def ingest(self, record: DomainRecord) -> DomainRecord:
